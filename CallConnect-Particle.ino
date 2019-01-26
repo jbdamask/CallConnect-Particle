@@ -28,12 +28,12 @@ int previousMQTTState = 0;
 
 /* Animation stuff -----*/
 unsigned long patternInterval = 20 ; // time between steps in the pattern
-// Each animation should have a value in this array 
+// Each animation should have a value in this array
 unsigned long animationSpeed [] = { 100, 50, 2, 2 } ; // speed for each animation (order counts!)
 #define ANIMATIONS sizeof(animationSpeed) / sizeof(animationSpeed[0])
 // Colors for sparkle
 uint8_t myFavoriteColors[][3] = {{200,   0, 200},   // purple
-                                 {200,   0,   0},   // red 
+                                 {200,   0,   0},   // red
                                  {200, 200, 200},   // white
                                };
 #define FAVCOLORS sizeof(myFavoriteColors) / 3
@@ -42,17 +42,17 @@ uint8_t myFavoriteColors[][3] = {{200,   0, 200},   // purple
 uint8_t state = 0, previousState = 0;
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN);
 unsigned long lastUpdate = 0, idleTimer = 0; // for millis() when last update occurred
-bool gotNewMessage = false;   // Set by MQTT handler 
+bool gotNewMessage = false;   // Set by MQTT handler
 int gotState = 0;             // Set by MQTT handler
 
 
 void setup() {
     Serial.begin(9600);
     // Here we are going to subscribe to your buddy's event using Particle.subscribe
-    // Particle.subscribe(TOPIC, myHandler, MY_DEVICES);    
-    Particle.subscribe(TOPIC, myHandler);    
+    // Particle.subscribe(TOPIC, myHandler, MY_DEVICES);
+    Particle.subscribe(TOPIC, myHandler);
     pinMode(D2, INPUT_PULLUP);
-    button1.debounceTime   = BUTTON_DEBOUNCE;   // Debounce timer in ms    
+    button1.debounceTime   = BUTTON_DEBOUNCE;   // Debounce timer in ms
     strip.setBrightness(BRIGHTNESS); // These things are bright!
     strip.begin(); // This initializes the NeoPixel library.
     wipe(); // wipes the LED buffers
@@ -68,17 +68,17 @@ void loop() {
     if(button1.clicks != 0) isTouched = true;
    // gotNewMessage = false;      // Reset
 
-    /* Change animation speed if state changed */ 
+    /* Change animation speed if state changed */
     if(previousState != state) {
-    //    Serial.print(DEVICE_NAME); Serial.println(": State change");
+        // Serial.println("State change");
         wipe();
         resetBrightness();
-        patternInterval = animationSpeed[state]; // set speed for this animation    
+        patternInterval = animationSpeed[state]; // set speed for this animation
         previousState = state;
     //    Serial.print("Animation speed for state: "); Serial.print(state); Serial.print(" is "); Serial.println(patternInterval);
     }
-  
- 
+
+
     // The various cases we can face
     switch(state){
         case 0: // Idle
@@ -88,8 +88,8 @@ void loop() {
                 previouslyTouched = true;
                 makingCall = true;
                 Serial.println("Calling...");
-                idleTimer = millis();  
-            } else if (gotNewMessage) {  
+                idleTimer = millis();
+            } /*else if (gotNewMessage) {
                 Serial.println("State 0. Got new message");
                 if(gotState == 1){
                     state = 1;
@@ -102,74 +102,76 @@ void loop() {
                 //   Serial.print("Expected payload 1 but got "); Serial.println(packetbuffer[2]);
                   resetState();
                 }
-            }
+            } */
             break;
         case 1: // calling
-          if(makingCall){
-            if(!toldUs) { // This is used to print once to the console
-              //Serial.println("I'm making the call");
-              toldUs = true;          
+            if(makingCall){
+                if(!toldUs) { // This is used to print once to the console
+                  //Serial.println("I'm making the call");
+                  toldUs = true;
+                }
+                if(millis() - idleTimer > IDLE_TIMEOUT){
+                  resetState();       // If no answer, we reset
+                  Serial.println("No one answered :-(");
+                }
+    //             if(gotNewMessage && previousMQTTState != 1){ // Our call has been answered. We're now connected
+    //               if(gotState == 2){
+    //                 //Serial.print("State 1: Received BLE. Moving to State "); Serial.println(packetbuffer[2]);
+    //                 state = 2;
+    //                 previousMQTTState = 3; // <-------- Is this needed? Why is it being set to 3?
+    //               }else{
+    // //                Serial.print("Expected payload 2 but got "); Serial.println(packetbuffer[2]);
+    // //                Serial.println("Resetting state to 0");
+    //                 resetState();
+    //               }
+    //             }
+            } else if(isTouched){  // If we're receiving a call, are now are touching the local device, then we're connected
+                //Serial.println("State 1. Button pushed. Moving to State 2");
+                state = 2;
+                publish("2");
+                //bleWrite(2);
+                previouslyTouched = true;
             }
-            if(millis() - idleTimer > IDLE_TIMEOUT){
-              resetState();       // If no answer, we reset
-              //Serial.println("No one answered :-(");
-            }
-            if(gotNewMessage && previousMQTTState != 1){ // Our call has been answered. We're now connected
-              if(gotState == 2){
-                //Serial.print("State 1: Received BLE. Moving to State "); Serial.println(packetbuffer[2]);
-                state = 2;       
-                previousMQTTState = 3; // <-------- Is this needed? Why is it being set to 3?
-              }else{
-//                Serial.print("Expected payload 2 but got "); Serial.println(packetbuffer[2]);
-//                Serial.println("Resetting state to 0");
-                resetState();
-              }
-            }      
-        } else if(isTouched){  // If we're receiving a call, are now are touching the local device, then we're connected
-            //Serial.println("State 1. Button pushed. Moving to State 2");        
-            state = 2;      
-            publish("2");
-            //bleWrite(2);
-            previouslyTouched = true;
-        } else if(gotNewMessage) {
-            //Serial.println("Receiving call");
-            if(gotState == 0){ // This device didn't answer in time so we check to see if we got a timeout signal
-              state = 0;  
-            }
-        }            
-        break;
+            // } else if(gotNewMessage) {
+            //     //Serial.println("Receiving call");
+            //     if(gotState == 0){ // This device didn't answer in time so we check to see if we got a timeout signal
+            //       state = 0;
+            // }
+
+            break;
         case 2:
             if(isTouched){    // Touch again to disconnect
                 Serial.println("State 2. Button pushed. Moving to State 3");
                 state = 3;
                 publish("3");
                 //bleWrite(3);
-                previouslyTouched = false;               
-            } else if( gotNewMessage ) {
-                if(gotState == 3){
-                    Serial.print("State 2. Received MQTT message. Moving to State 3"); 
-                    state = 3;
-                    previousMQTTState = 3; // is this needed?????                
-                }else{
-                    //Serial.print("Expected payload 3 but got "); Serial.println(packetbuffer[2]);
-                    resetState();
-                }
+                previouslyTouched = false;
             }
+            // else if( gotNewMessage ) {
+            //     if(gotState == 3){
+            //         Serial.print("State 2. Received MQTT message. Moving to State 3");
+            //         state = 3;
+            //         previousMQTTState = 3; // is this needed?????
+            //     }else{
+            //         //Serial.print("Expected payload 3 but got "); Serial.println(packetbuffer[2]);
+            //         resetState();
+            //     }
+            // }
             if(state == 3) {
                 Serial.println("Disconnecting. Starting count down timer.");
                 countDown = millis();   // Start the timer
             }
-            break;    
+            break;
         case 3:
             if(millis() - countDown > IDLE_TIMEOUT) {
                 Serial.println("State 3. Timed out. Moving to State 0");
                 resetState();
                 // Reset
-//                previouslyTouched = false; 
-//                makingCall = false; 
-                //bleReceived = false; 
-                previousState = 0; 
-                //previousBleState = 0;       
+//                previouslyTouched = false;
+//                makingCall = false;
+                //bleReceived = false;
+                previousState = 0;
+                //previousBleState = 0;
             }
             if(isTouched && previouslyTouched == false){  // If we took our hand off but put it back on in under the time limit, re-connect
                 //Serial.println("Reconnecting...");
@@ -177,28 +179,29 @@ void loop() {
                 state = 2;
                 publish("2");
 //                bleWrite(2);
-                previouslyTouched = true;            
-            } else if( gotNewMessage ) {
-                if(gotState == 2){
-                     //Serial.print("State 3. Received BLE. Moving to State "); Serial.println(packetbuffer[2]);
-                     state = 2;
-                     previousMQTTState = 2; // is this needed?????                
-                }else{
-                    //Serial.print("Expected payload 2 but got "); Serial.println(packetbuffer[2]);
-                    resetState();
-                }
-            } 
-            break; 
+                previouslyTouched = true;
+            }
+            // else if( gotNewMessage ) {
+            //     if(gotState == 2){
+            //          //Serial.print("State 3. Received BLE. Moving to State "); Serial.println(packetbuffer[2]);
+            //          state = 2;
+            //          previousMQTTState = 2; // is this needed?????
+            //     }else{
+            //         //Serial.print("Expected payload 2 but got "); Serial.println(packetbuffer[2]);
+            //         resetState();
+            //     }
+            // }
+            break;
         default:
             resetState();
-            break;            
+            break;
     }
-    
+
     // Update animation frame
-    if(millis() - lastUpdate > patternInterval) { 
+    if(millis() - lastUpdate > patternInterval) {
         updatePattern(state);
     }
-    
+
     gotNewMessage = false;      // Reset
 }
 
@@ -212,14 +215,14 @@ int cnt = 0;
 void myHandler(const char *event, const char *data)
 {
     cnt++;
-    // Serial.print(cnt);
-    // Serial.print(event);
-    // Serial.print(", data: ");
-    // if (data)
-    // Serial.println(data);
-    // else
-    // Serial.println("NULL");
-    
+    Serial.print(cnt);
+    Serial.print(event);
+    Serial.print(", data: ");
+    if (data)
+    Serial.println(data);
+    else
+    Serial.println("NULL");
+
     // gotNewMessage = true; //<------ This doesn't belong here
     if(strcmp(data,"0")==0){
         gotState = 0;
@@ -250,29 +253,29 @@ void resetState(){
 }
 
 // Update the animation
-void  updatePattern(int pat){ 
+void  updatePattern(int pat){
   switch(pat) {
     case 0:
       wipe();
       strip.show();
       break;
-    case 1: 
+    case 1:
       wipe();
       sparkle(3);
-      break;     
+      break;
     case 2:
       breathe(1); // Breath blue
       break;
     case 3:
       breathe(2); // Breathe red
       break;
-  }  
+  }
 }
 
 
 // LED breathing. Used for when devices are connected to one another
-void breathe(int x) { 
-  float SpeedFactor = 0.008; 
+void breathe(int x) {
+  float SpeedFactor = 0.008;
   static int i = 0;
   static int r,g,b;
   switch(x){
@@ -301,17 +304,17 @@ void breathe(int x) {
 void sparkle(uint8_t howmany) {
   static int x = 0;
   static bool goingUp = true;
-  
+
   for(uint16_t i=0; i<howmany; i++) {
     // pick a random favorite color!
     int c = random(FAVCOLORS);
     int red = myFavoriteColors[c][0];
     int green = myFavoriteColors[c][1];
-    int blue = myFavoriteColors[c][2]; 
+    int blue = myFavoriteColors[c][2];
 
     // get a random pixel from the list
     int j = random(strip.numPixels());
-    
+
     // now we will 'fade' it in 5 steps
     if(goingUp){
       if(x < 5) {
@@ -324,22 +327,22 @@ void sparkle(uint8_t howmany) {
         x--;
       } else {
         goingUp = true;
-      }     
+      }
     }
 
     int r = red * (x+1); r /= 5;
     int g = green * (x+1); g /= 5;
-    int b = blue * (x+1); b /= 5;      
-    strip.setPixelColor(j, strip.Color(r,g,b));      
+    int b = blue * (x+1); b /= 5;
+    strip.setPixelColor(j, strip.Color(r,g,b));
     strip.show();
   }
   lastUpdate = millis();
 }
 
 // clear all LEDs
-void wipe(){ 
+void wipe(){
    for(int i=0;i<strip.numPixels();i++){
-     strip.setPixelColor(i, strip.Color(0,0,0)); 
+     strip.setPixelColor(i, strip.Color(0,0,0));
    }
 }
 
