@@ -7,10 +7,10 @@
 
 /* Variable definitions ------------------------------*/
 #define BUTTON          D2
-#define PIXEL_COUNT     31 // number of LEDs on strip
+#define PIXEL_COUNT     41 // number of LEDs on strip
 #define PIXEL_PIN       D6 // pin connected to the small NeoPixels strip
-//#define PIXEL_TYPE      SK6812RGBW  // NeoPixel RGBW
-#define PIXEL_TYPE      WS2812B     // NeoPixel RGB
+#define PIXEL_TYPE SK6812RGBW // NeoPixel RGBW
+// #define PIXEL_TYPE      WS2812B     // NeoPixel RGB
 #define BRIGHTNESS      100 // Max brightness of NeoPixels
 #define BUTTON_DEBOUNCE 20  // Removes button noise
 #define IDLE_TIMEOUT    5000   // Milliseconds that there can be no touch or ble input before reverting to idle state
@@ -18,8 +18,7 @@
 /* Button stuff -----*/
 const int buttonPin1 = 2;
 ClickButton button1(buttonPin1, LOW, CLICKBTN_PULLUP);
-// Keep track of who calls and who receives
-bool makingCall = false;
+bool makingCall = false;    // Keep track of who calls and who receives
 bool previouslyTouched = false;
 
 /* MQTT stuff -----*/
@@ -223,10 +222,12 @@ void breathe(int x) {
   }
   // Make the lights breathe
   float intensity = BRIGHTNESS /2.0 * (1.0 + sin(SpeedFactor * i));
-  strip.setBrightness(intensity);
+//   strip.setBrightness(intensity);
   for (int j=0; j<strip.numPixels(); j++) {
-    strip.setPixelColor(j, r, g, b);
+    // strip.setPixelColor(j, strip.Color(r, g, b)); // Use with WS2812B
+    strip.setPixelColor(j, strip.Color(g, r, b));   // Use with SK6812RGBW
   }
+  strip.setBrightness(intensity);
   strip.show();
   i++;
   if(i >= 65535){
