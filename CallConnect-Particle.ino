@@ -43,7 +43,7 @@ uint8_t myFavoriteColors[][3] = {{200,   0, 200},   // purple
 
 /* Connection state (0 = idle; 1 = calling; 2 = connected) -----*/
 uint8_t state = 0, previousState = 0;
-Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 unsigned long lastUpdate = 0, idleTimer = 0; // for millis() when last update occurred
 bool gotNewMessage = false;   // Set by MQTT handler
 int gotState = 0;             // Set by MQTT handler
