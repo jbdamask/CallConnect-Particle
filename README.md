@@ -1,8 +1,8 @@
-## Call Connect for Particle Boards
+## Call Connect for Particle Photon Boards
 LED animations to visualize connected device "calls" and connections. Code written for Particle.
 
 ## Hardware
-* Particle (Photon or Argon)
+* Particle Photon
 * Neopixels
 * Button (will change to FSR in near future)
 
@@ -14,5 +14,6 @@ LED animations and MQTT topic pubs
 
 
 ## Notes
+* Note that this code WILL NOT WORK with Argon boards as they don't currently seem to support SoftAP
 * I'm not happy with Particle's platform. I want to make working prototypes to hand out to people which means they need to be easy to set up on their networks. But SoftAP only exists for Photon, not the latest Argon board. I've lost a day of time trying to figure out why. Moving past Particle onto ESP32
 * Requires Particle-specific libraries for buttons and NeoPixels
