@@ -9,8 +9,8 @@
 #define BUTTON          D2
 #define PIXEL_COUNT     41 // number of LEDs on strip
 #define PIXEL_PIN       D6 // pin connected to the small NeoPixels strip
-// #define PIXEL_TYPE SK6812RGBW // NeoPixel RGBW
-#define PIXEL_TYPE      WS2812B     // NeoPixel RGB
+#define PIXEL_TYPE SK6812RGBW // NeoPixel RGBW
+// #define PIXEL_TYPE      WS2812B     // NeoPixel RGB
 #define BRIGHTNESS      100 // Max brightness of NeoPixels
 #define BUTTON_DEBOUNCE 20  // Removes button noise
 #define IDLE_TIMEOUT    5000   // Milliseconds that there can be no touch or ble input before reverting to idle state
