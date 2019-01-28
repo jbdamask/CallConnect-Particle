@@ -1,3 +1,5 @@
+
+
 #include "Particle.h"
 #include "softap_http.h"
 // This #include statement was automatically added by the Particle IDE.
@@ -8,6 +10,7 @@
 #include <math.h>
 
 /* Variable definitions ------------------------------*/
+#define PIN_SOFTAP      D0
 #define BUTTON          D2
 #define PIXEL_COUNT     41 // number of LEDs on strip
 #define PIXEL_PIN       D6 // pin connected to the small NeoPixels strip
@@ -19,7 +22,9 @@
 
 /* Button stuff -----*/
 const int buttonPin1 = 2;
+const int buttonPin2 = 0;
 ClickButton button1(buttonPin1, LOW, CLICKBTN_PULLUP);
+ClickButton button2(buttonPin2, LOW, CLICKBTN_PULLUP);
 bool makingCall = false;    // Keep track of who calls and who receives
 bool previouslyTouched = false;
 
@@ -110,6 +115,7 @@ void myPage(const char* url, ResponseCallback* cb, void* cbArg, Reader* body, Wr
     }
 }
 
+SYSTEM_MODE(SEMI_AUTOMATIC);
 STARTUP(softap_set_application_page_handler(myPage, nullptr));
 
 // Press SETUP for 3 seconds to make the Photon enter Listening mode
@@ -132,6 +138,11 @@ long countDown = 0;  // Counts down a certain number of seconds before taking ac
 
 void setup() {
     Serial.begin(9600);
+    // For dynamic SoftAP
+    WiFi.on();
+    Spark.connect();
+
+    
     // Here we are going to subscribe to your buddy's event using Particle.subscribe
     Particle.subscribe(TOPIC, myHandler);
     pinMode(D2, INPUT_PULLUP);
@@ -143,9 +154,20 @@ void setup() {
 
 }
 
+
 void loop() {
     bool static toldUs = false; // When in state 1, we're either making or receiving a call
     bool isTouched = false; // Holds button state
+    
+    button2.Update();       // Checks for WiFi reset signal
+    if(button2.clicks == 2){
+        Particle.publish("Reset WiFi!");
+        //if(!WiFi.ready()){
+            WiFi.listen();
+        //}
+    }
+    
+    
     button1.Update();       // Update button state
     if(button1.clicks != 0) isTouched = true;
     /* Change animation speed if state changed */
